@@ -51,16 +51,14 @@ class Cosh():
     logging.info("Provisioning...")
     provisioning = {}
 
-    tmpdir = self.tmpdir.tmp()
-    logging.info("Temp directory: %s" % tmpdir)
-    docker_prov = DockerProvisioner(tmpdir)
+    docker_prov = DockerProvisioner(self.tmpdir.tmp())
     provisioning.update(docker_prov.provision())
 
     docker = DockerTerminalClient()
 
     commands_prov = CommandsProvisioner(docker=docker,
                                         env=self.env,
-                                        basedir=tmpdir,
+                                        basedir=self.tmpdir.bin(),
                                         prefix=self.prefix,
                                         versioned_commands=versioned_commands)
     provisioning.update(commands_prov.provision())

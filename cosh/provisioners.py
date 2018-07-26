@@ -74,7 +74,8 @@ class CommandsProvisioner:
                                              auto_remove=True,
                                              environment=self.env.environment(),
                                              mounts=self.env.mounts(self.command_provisioning),
-                                             working_dir=self.env.workdir()))
+                                             working_dir=self.env.workdir(),
+                                             tty=False))
         file.close()
         st = os.stat(file_name)
         os.chmod(file_name, st.st_mode | stat.S_IEXEC)

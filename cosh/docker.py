@@ -39,8 +39,9 @@ class DockerMount:
 class DockerTerminalClient:
 
   def run_command(self, image, arguments=[], environment=[], mounts=[], working_dir=None,
-                  auto_remove=True):
-    return 'docker run -it --net=host %s %s %s %s %s %s' % (
+                  auto_remove=True, tty=False):
+    return 'docker run --net=host -i %s %s %s %s %s %s %s' % (
+      '-t' if tty else '',
       '--rm' if auto_remove else '',
       ' '.join('-e %s' % env for env in environment),
       ' '.join('-v %s:%s' % (mount.source, mount.target) for mount in mounts),
@@ -49,7 +50,8 @@ class DockerTerminalClient:
       ' '.join(arguments))
 
   def run(self, image, arguments=[], environment=[], mounts=[], working_dir=None, auto_remove=True):
-    cmd = self.run_command(image, arguments, environment, mounts, working_dir, auto_remove)
+    cmd = self.run_command(image, arguments, environment, mounts, working_dir, auto_remove,
+                           tty=True)
     logging.info('Running command:\n%s' % cmd)
     return subprocess.check_call(cmd.split(' '))
 
