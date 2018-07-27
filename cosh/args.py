@@ -1,5 +1,4 @@
 import argparse
-
 import logging
 
 from cosh import Cosh
@@ -14,7 +13,7 @@ def get():
   )
   parser.add_argument('--debug', type=bool,
                       default=False,
-                      help='Ignore cache')
+                      help='Turn on debug logging')
   parser.add_argument('--no-cache', type=bool,
                       default=False,
                       help='Ignore cache')
@@ -36,6 +35,8 @@ def get():
 
   cache = NoCache() if args.no_cache else FileCache()
 
-  cosh = Cosh(DockerEnvironment(), cache, args.image_prefix)
+  cosh = Cosh(env=DockerEnvironment(),
+              cache=cache,
+              prefix=args.image_prefix)
   cosh.run_checks()
   cosh.run(args.command, args.arguments)

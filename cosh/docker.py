@@ -31,27 +31,41 @@ class DockerReigstryClient:
 
 
 class DockerMount:
-  def __init__(self, source, target):
+  def __init__(self, source, target, readonly=False):
+    self.readonly = readonly
     self.target = target
     self.source = source
 
 
 class DockerTerminalClient:
 
-  def run_command(self, image, arguments=[], environment=[], mounts=[], working_dir=None,
-                  auto_remove=True, tty=False):
-    return 'docker run --net=host -i %s %s %s %s %s %s %s' % (
-      '-t' if tty else '',
-      '--rm' if auto_remove else '',
-      ' '.join('-e %s' % env for env in environment),
-      ' '.join('-v %s:%s' % (mount.source, mount.target) for mount in mounts),
-      ('-w %s' % working_dir) if working_dir else '',
+  def run_command(self,
+                  image,
+                  arguments,
+                  **kwargs):
+    volume_mounts = ' '.join('%s-v %s:%s'
+                             % ('--read-only '
+                                if mount.readonly else '', mount.source, mount.target)
+                             for mount in kwargs['mounts']) if 'mounts' in kwargs else ''
+    envs = ' '.join('-e %s' % env for env in kwargs['environment']) \
+      if 'environment' in kwargs else ''
+    attachments = ' '.join('-a %s' % a for a in kwargs['attach']) if 'attach' in kwargs else ''
+    return 'docker run --net=host -i%s%s%s%s%s%s%s %s %s' % (
+      ' %s' % attachments if attachments else '',
+      ' -t' if 'tty' in kwargs and kwargs['tty'] else '',
+      ' --rm' if 'auto_remove' in kwargs and kwargs['auto_remove'] else '',
+      ' %s' % envs if envs else '',
+      ' %s' % volume_mounts if volume_mounts else '',
+      (' -w %s' % kwargs['working_dir']) if 'working_dir' in kwargs else '',
+      ' %s' % kwargs['custom'] if 'custom' in kwargs else '',
       image,
       ' '.join(arguments))
 
-  def run(self, image, arguments=[], environment=[], mounts=[], working_dir=None, auto_remove=True):
-    cmd = self.run_command(image, arguments, environment, mounts, working_dir, auto_remove,
-                           tty=True)
+  def run(self,
+          image,
+          arguments,
+          **kwargs):
+    cmd = self.run_command(image, arguments, **kwargs)
     logging.debug('Running command:\n%s' % cmd)
     return subprocess.check_call(cmd.split(' '))
 
@@ -95,8 +109,7 @@ class DockerEnvironment:
 
     mounts += DockerEnvironment.__root_mount(dev, 'dev')
 
-    # TODO: mount read-only!
-    mounts += [DockerMount(source=source, target='/sbin/%s' % command)
+    mounts += [DockerMount(source=source, target='/sbin/%s' % command, readonly=True)
                for command, source in provisioning.items()]
 
     mounts += [DockerMount(source=source, target=target) for source, target in extra_mount]
