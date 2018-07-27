@@ -3,6 +3,7 @@ import logging
 import os
 import stat
 import tarfile
+import time
 
 import requests
 
@@ -49,7 +50,8 @@ class DockerProvisioner:
 
 class CommandsProvisioner:
 
-  def __init__(self, docker, env, basedir, prefix, versioned_commands):
+  def __init__(self, docker, env, basedir, prefix, versioned_commands, ttl=120 * 60):
+    self.ttl = ttl
     self.docker = docker
     self.env = env
     self.prefix = prefix
@@ -61,22 +63,23 @@ class CommandsProvisioner:
   def provision(self):
     targets = {}
     logging.debug('Provisioning commands: %s' % self.versioned_commands)
+    # login_flag = ' -l' if self.interactive else ''
 
     for command, version in self.versioned_commands.items():
       logging.debug('Provisioning command: %s:%s' % (command, version))
       file_name = '%s/%s' % (self.basedir, command)
-      if not os.path.exists(file_name):
+      if not os.path.exists(file_name) or time.time() - os.path.getctime(file_name) > self.ttl:
         file = open(file_name, 'w')
-        file.write('#!/bin/bash\n'
-                   'set -Eeuo pipefail\n'
-                   '%s'
-                   % self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
+        file.write('test -t 1 && export USE_TTY="-t"\n'
+                   'exec %s'
+                   % (
+                     self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
                                              arguments=["$@"],
                                              auto_remove=True,
                                              environment=self.env.environment(),
                                              mounts=self.env.mounts(self.command_provisioning),
                                              working_dir=self.env.workdir(),
-                                             tty=False))
+                                             custom='${USE_TTY}')))
         file.close()
         st = os.stat(file_name)
         os.chmod(file_name, st.st_mode | stat.S_IEXEC)
