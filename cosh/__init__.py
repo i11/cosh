@@ -5,9 +5,6 @@ from cosh.provisioners import DockerProvisioner, CommandsProvisioner
 from cosh.requirements import DockerRequirement
 from cosh.tmpdir import Tmpdir
 
-logging.basicConfig(level=logging.DEBUG)
-
-
 class Cosh():
   def __init__(self, env, cache, prefix, reqs=[]):
     self.env = env
@@ -32,7 +29,7 @@ class Cosh():
       req.check()
 
   def run(self, command_str, args):
-    logging.info('Fetching all remote commands...')
+    logging.debug('Fetching all remote commands...')
     remote_commands = [command for command in self.cache.load(self.remote_commands) if
                        not command in ['bash', 'docker']]
     versioned_commands = {command: self.cache.load(self.latest_version, command) for command in
@@ -40,7 +37,7 @@ class Cosh():
 
     maybe_versioned_command = command_str.split(':')
     command_name = maybe_versioned_command[0]
-    logging.info('Executing command %s with arguments %s' % (command_name, args))
+    logging.debug('Executing command %s with arguments %s' % (command_name, args))
 
     version = maybe_versioned_command[1] \
       if len(maybe_versioned_command) > 1 else versioned_commands[command_name]
@@ -48,7 +45,7 @@ class Cosh():
     if not (command_name in remote_commands and version):
       raise Exception('%s command not found' % command_str)
 
-    logging.info("Provisioning...")
+    logging.debug("Provisioning...")
     provisioning = {}
 
     docker_prov = DockerProvisioner(self.tmpdir.tmp())

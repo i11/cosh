@@ -27,26 +27,26 @@ class FileCache:
     self.tmpdir = Tmpdir()
 
   def load(self, fn_ref, *fn_args):
-    logging.info('Loading file cache for %s with %s' % (fn_ref, fn_args))
+    logging.debug('Loading file cache for %s with %s' % (fn_ref, fn_args))
     file_name = '%s/%s%s.json' % (
       self.tmpdir.cache(), func_ref_name(fn_ref), ('_' + '_'.join(fn_args) if fn_args else ''))
 
     if os.path.exists(file_name):
       ctime = os.path.getctime(file_name)
       if time.time() - ctime > self.ttl:
-        logging.info('Cache expired. Refreshing...')
+        logging.debug('Cache expired. Refreshing...')
         result = func_call(fn_ref, *fn_args)
-        logging.info('Writing results: %s' % result)
+        logging.debug('Writing results: %s' % result)
         with open(file_name, 'wb') as f:
           json.dump(result, codecs.getwriter('utf-8')(f), ensure_ascii=False)
       else:
-        logging.info('Valid cache found. Loading...')
+        logging.debug('Valid cache found. Loading...')
         with open(file_name) as f:
           result = json.load(f)
     else:
-      logging.info('No cache found. Refreshing...')
+      logging.debug('No cache found. Refreshing...')
       result = func_call(fn_ref, *fn_args)
-      logging.info('Writing results: %s' % result)
+      logging.debug('Writing results: %s' % result)
       with open(file_name, 'wb') as f:
         json.dump(result, codecs.getwriter('utf-8')(f), ensure_ascii=False)
     return result

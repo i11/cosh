@@ -1,5 +1,7 @@
 import argparse
 
+import logging
+
 from cosh import Cosh
 from cosh.cache import FileCache, NoCache
 from cosh.docker import DockerEnvironment
@@ -10,6 +12,9 @@ def get():
     description='Container shell',
     prog='cosh'
   )
+  parser.add_argument('--debug', type=bool,
+                      default=False,
+                      help='Ignore cache')
   parser.add_argument('--no-cache', type=bool,
                       default=False,
                       help='Ignore cache')
@@ -23,6 +28,11 @@ def get():
   parser.add_argument('arguments', type=str, nargs='*',
                       help='Command arguments')
   args = parser.parse_args()
+
+  if args.debug:
+    logging.basicConfig(level=logging.DEBUG)
+  else:
+    logging.basicConfig(level=logging.INFO)
 
   cache = NoCache() if args.no_cache else FileCache()
 

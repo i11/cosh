@@ -52,7 +52,7 @@ class DockerTerminalClient:
   def run(self, image, arguments=[], environment=[], mounts=[], working_dir=None, auto_remove=True):
     cmd = self.run_command(image, arguments, environment, mounts, working_dir, auto_remove,
                            tty=True)
-    logging.info('Running command:\n%s' % cmd)
+    logging.debug('Running command:\n%s' % cmd)
     return subprocess.check_call(cmd.split(' '))
 
 
@@ -86,8 +86,9 @@ class DockerEnvironment:
     #   mounts += Environment.__root_mount(tmp, 'tmp')
     if not pwd == home:
       mounts += DockerEnvironment.__root_mount(home, 'home')
-      if not home == DockerEnvironment.CONTAINER_HOME:
-        mounts += DockerEnvironment.__root_mount(home, 'home', '/home')
+
+    if not home == DockerEnvironment.CONTAINER_HOME:
+      mounts += DockerEnvironment.__root_mount(home, 'home', '/home')
 
     if DockerEnvironment.__is_socket(DockerEnvironment.DOCKER_SOCK):
       mounts += DockerEnvironment.__root_mount(DockerEnvironment.DOCKER_SOCK, 'docker.sock')

@@ -35,7 +35,7 @@ class DockerProvisioner:
   def provision(self):
     target = '%s/docker/docker' % self.basedir
 
-    logging.info('Provisioning docker %s...' % target)
+    logging.debug('Provisioning docker %s...' % target)
     if not os.path.exists(target):
       local_docker_tgz = '%s/docker.tgz' % self.basedir
       download_file(DockerProvisioner.__docker_static_url, local_docker_tgz)
@@ -60,14 +60,15 @@ class CommandsProvisioner:
 
   def provision(self):
     targets = {}
-    logging.info('Provisioning commands: %s' % self.versioned_commands)
+    logging.debug('Provisioning commands: %s' % self.versioned_commands)
 
     for command, version in self.versioned_commands.items():
-      logging.info('Provisioning command: %s:%s' % (command, version))
+      logging.debug('Provisioning command: %s:%s' % (command, version))
       file_name = '%s/%s' % (self.basedir, command)
       if not os.path.exists(file_name):
         file = open(file_name, 'w')
         file.write('#!/bin/bash\n'
+                   'set -Eeuo pipefail\n'
                    '%s'
                    % self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
                                              arguments=["$@"],
@@ -80,6 +81,6 @@ class CommandsProvisioner:
         st = os.stat(file_name)
         os.chmod(file_name, st.st_mode | stat.S_IEXEC)
 
-      logging.info('Add command %s to %s target' % (command, file_name))
+      logging.debug('Add command %s to %s target' % (command, file_name))
       targets.update(dict([(command, file_name)]))
     return targets
