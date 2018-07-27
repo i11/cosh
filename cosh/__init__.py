@@ -5,6 +5,7 @@ from cosh.provisioners import DockerProvisioner, CommandsProvisioner
 from cosh.requirements import DockerRequirement
 from cosh.tmpdir import Tmpdir
 
+
 class Cosh():
   def __init__(self, env, cache, prefix, reqs=[]):
     self.env = env
@@ -19,7 +20,7 @@ class Cosh():
     for tag in tags:
       if tag['name'] == 'latest':
         return 'latest'
-    return tags[0]['name']
+    return tags[0]['name'] if tags else None
 
   def remote_commands(self):
     return [repo['name'].split('/')[1] for repo in self.registry.repos(self.prefix)]
@@ -33,7 +34,7 @@ class Cosh():
     remote_commands = [command for command in self.cache.load(self.remote_commands) if
                        not command in ['bash', 'docker']]
     versioned_commands = {command: self.cache.load(self.latest_version, command) for command in
-                          remote_commands}
+                          remote_commands if self.cache.load(self.latest_version, command)}
 
     maybe_versioned_command = command_str.split(':')
     command_name = maybe_versioned_command[0]
@@ -64,4 +65,5 @@ class Cosh():
                auto_remove=True,
                environment=self.env.environment(),
                mounts=self.env.mounts(provisioning),
-               working_dir=self.env.workdir())
+               working_dir=self.env.workdir(),
+               tty=True)
