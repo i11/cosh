@@ -6,3 +6,9 @@ script:
 install:
   - pip install -r requirements-build.txt
   - pip install -r requirements.txt
+deploy:
+  provider: pypi
+  user: ${PYPI_USER}
+  password: ${PYPI_PASSWORD}
+  on:
+    tags: true
