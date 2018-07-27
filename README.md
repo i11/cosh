@@ -17,16 +17,27 @@ cosh --help
 
 ## Examples
 
-```sh
+```bash
 cosh git status
 ```
 
-```sh
+```bash
 cosh java -- -version
 ```
 
-```sh
+```bash
 cosh java:8-jdk-latest -- -version
+```
+
+## Advanced examples
+
+```bash
+# Cloning repo
+cosh git clone https://github.com/i11/jackson-datatype-datastore
+cd jackson-datatype-datastore
+
+# Compiling and running tests. Specific version is required since project depends on java8
+cosh mvn:3.5.4-java8-1 clean test
 ```
 
 ## Limitations
