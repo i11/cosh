@@ -90,14 +90,14 @@ class DockerEnvironment:
       target = destination if destination else ('/mount/%s' % name)
     return [DockerMount(source=source, target=target)]
 
-  def mounts(self, provisioning, extra_mount={}):
+  def mounts(self, tmp, provisioning, extra_mount={}):
     home = os.environ.get('HOME')
     pwd = os.getcwd()
     dev = '/dev'
 
     mounts = DockerEnvironment.__root_mount(pwd, 'root')
-    # if not pwd == tmp:
-    #   mounts += Environment.__root_mount(tmp, 'tmp')
+    if not pwd == tmp:
+      mounts += DockerEnvironment.__root_mount(tmp, 'tmp')
     if not pwd == home:
       mounts += DockerEnvironment.__root_mount(home, 'home')
 

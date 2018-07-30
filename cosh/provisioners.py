@@ -50,7 +50,8 @@ class DockerProvisioner:
 
 class CommandsProvisioner:
 
-  def __init__(self, docker, env, basedir, prefix, versioned_commands, ttl=120 * 60):
+  def __init__(self, tmp, docker, env, basedir, prefix, versioned_commands, ttl=120 * 60):
+    self.tmp = tmp
     self.ttl = ttl
     self.docker = docker
     self.env = env
@@ -70,16 +71,20 @@ class CommandsProvisioner:
       file_name = '%s/%s' % (self.basedir, command)
       if not os.path.exists(file_name) or time.time() - os.path.getctime(file_name) > self.ttl:
         file = open(file_name, 'w')
-        file.write('test -t 1 && export USE_TTY="-t"\n'
-                   'exec %s'
-                   % (
-                     self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
-                                             arguments=["$@"],
-                                             auto_remove=True,
-                                             environment=self.env.environment(),
-                                             mounts=self.env.mounts(self.command_provisioning),
-                                             working_dir=self.env.workdir(),
-                                             custom='${USE_TTY}')))
+        file.write(
+          'cmd=$(basename ${BASH_SOURCE[0]})\n'
+          'test -x /bin/$cmd && '
+          'exec /bin/$cmd "$@"\n'
+          'test -t 1 && export USE_TTY="-t"\n'
+          'exec %s'
+          % (self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
+                                     arguments=["$@"],
+                                     auto_remove=True,
+                                     environment=self.env.environment(),
+                                     mounts=self.env.mounts(tmp=self.tmp,
+                                                            provisioning=self.command_provisioning),
+                                     working_dir=self.env.workdir(),
+                                     custom='${USE_TTY}')))
         file.close()
         st = os.stat(file_name)
         os.chmod(file_name, st.st_mode | stat.S_IEXEC)

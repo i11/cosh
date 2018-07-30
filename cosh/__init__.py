@@ -54,16 +54,18 @@ class Cosh():
 
     docker = DockerTerminalClient()
 
-    commands_prov = CommandsProvisioner(docker=docker,
+    commands_prov = CommandsProvisioner(tmp=self.tmpdir.base(),
+                                        docker=docker,
                                         env=self.env,
                                         basedir=self.tmpdir.bin(),
                                         prefix=self.prefix,
                                         versioned_commands=versioned_commands)
     provisioning.update(commands_prov.provision())
 
-    docker.run(image='%s%s:%s' % (self.prefix, command_name, version), arguments=args,
+    docker.run(image='%s%s:%s' % (self.prefix, command_name, version),
+               arguments=args,
                auto_remove=True,
                environment=self.env.environment(),
-               mounts=self.env.mounts(provisioning),
+               mounts=self.env.mounts(tmp=self.tmpdir.base(), provisioning=provisioning),
                working_dir=self.env.workdir(),
                tty=True)

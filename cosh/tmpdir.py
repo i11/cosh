@@ -11,10 +11,14 @@ class Tmpdir:
       os.makedirs(__dir)
 
   def __init__(self):
-    self.__tmpdir = '%s/cosh' % (
-      '/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()).rstrip('/')
+    self.__basedir = \
+      ('/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()).rstrip('/')
+    self.__tmpdir = '%s/cosh' % self.__basedir
     self.__bindir = '%s/bin' % self.__tmpdir
     self.__cachedir = '%s/cache' % self.__tmpdir
+
+  def base(self):
+    return self.__basedir
 
   def tmp(self):
     Tmpdir.__create(self.__tmpdir)
