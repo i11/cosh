@@ -1,7 +1,6 @@
 import logging
 import os
 import stat
-import subprocess
 
 import requests
 
@@ -67,7 +66,7 @@ class DockerTerminalClient:
           **kwargs):
     cmd = self.run_command(image, arguments, **kwargs)
     logging.debug('Running command:\n%s' % cmd)
-    return subprocess.check_call(cmd.split(' '))
+    return os.system(cmd)
 
 
 class DockerEnvironment:

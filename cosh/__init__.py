@@ -32,7 +32,7 @@ class Cosh():
   def run(self, command_str, args):
     logging.debug('Fetching all remote commands...')
     remote_commands = [command for command in self.cache.load(self.remote_commands) if
-                       not command in ['bash', 'docker']]
+                       not command in ['docker']]
     versioned_commands = {command: self.cache.load(self.latest_version, command) for command in
                           remote_commands if self.cache.load(self.latest_version, command)}
 

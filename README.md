@@ -29,6 +29,11 @@ cosh java -- -version
 cosh java:8-jdk-latest -- -version
 ```
 
+```bash
+# Interactive
+cosh sbt
+```
+
 ## Advanced examples
 
 ```bash
