@@ -49,6 +49,8 @@ cd jackson-datatype-datastore
 cosh mvn:3.5.4-java8-1 clean test
 ```
 
+See https://store.docker.com/profiles/actions for more available commands.
+
 ## Limitations
 
 The project is at very very very early stage. It is profoundly raw and has a lot of quirks at this point in time.
