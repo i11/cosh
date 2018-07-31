@@ -30,7 +30,6 @@ cosh java:8-jdk-latest -- -version
 ```
 
 ```bash
-# Interactive
 cosh gcloud config list
 ```
 
