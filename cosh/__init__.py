@@ -40,8 +40,11 @@ class Cosh():
     command_name = maybe_versioned_command[0]
     logging.debug('Executing command %s with arguments %s' % (command_name, args))
 
-    version = maybe_versioned_command[1] \
-      if len(maybe_versioned_command) > 1 else versioned_commands[command_name]
+    version = ''
+    if len(maybe_versioned_command) > 1:
+      version = maybe_versioned_command[1]
+    if command_name in remote_commands:
+      version = versioned_commands[command_name]
 
     if not (command_name in remote_commands and version):
       raise Exception('%s command not found' % command_str)
