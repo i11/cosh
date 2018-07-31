@@ -53,7 +53,8 @@ See https://store.docker.com/profiles/actions for more available commands.
 
 ## Limitations
 
-The project is at very very very early stage. It is profoundly raw and has a lot of quirks at this point in time.
+* The project is at very very very early stage. It is profoundly raw and has a lot of quirks at this point in time.
+* No tty/pty support 
 
 ## Contribution
 
