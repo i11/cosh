@@ -7,16 +7,28 @@ import requests
 
 class DockerReigstryClient:
 
-  def __init__(self, host='registry.hub.docker.com'):
-    self.host = host
+  def __init__(self, hub='registry.hub.docker.com',
+               store='store.docker.com'):
+    self.store = store
+    self.hub = hub
 
-  def repos(self, organisation='actions'):
-    r = requests.get('https://%s/v1/search?q=%s' % (self.host, organisation))
+  def list_store_repos(self, organisation='actions'):
+    r = requests.get('https://%s/v2/repositories/%s?page_size=100' % (self.store, organisation))
+    repos = r.json()
+    results = repos['results']
+    while repos['next']:
+      r = requests.get(repos['next'])
+      repos = r.json()
+      results += repos['results']
+    return results
+
+  def search_hub(self, organisation='actions'):
+    r = requests.get('https://%s/v1/search?q=%s' % (self.hub, organisation))
     search = r.json()
     search_results = search['results']
     while search['num_pages'] != search['page']:
       r = requests.get('https://%s/v1/search?q=%s&page=%d'
-                       % (self.host, organisation.rstrip('/'), search['page'] + 1))
+                       % (self.hub, organisation, search['page'] + 1))
       search = r.json()
       search_results += search['results']
 
@@ -25,7 +37,7 @@ class DockerReigstryClient:
 
   def tags(self, repo, organisation='actions'):
     r = requests.get('https://%s/v1/repositories/%s/%s/tags'
-                     % (self.host, organisation.rstrip('/'), repo))
+                     % (self.hub, organisation.rstrip('/'), repo))
     return r.json()
 
 

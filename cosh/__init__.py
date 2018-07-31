@@ -23,7 +23,8 @@ class Cosh():
     return tags[0]['name'] if tags else None
 
   def remote_commands(self):
-    return [repo['name'].split('/')[1] for repo in self.registry.repos(self.prefix)]
+    return list(set([repo['name'].split('/')[1] for repo in self.registry.search_hub(self.prefix)] \
+                    + [repo['name'] for repo in self.registry.list_store_repos(self.prefix)]))
 
   def run_checks(self):
     for req in ([DockerRequirement()] + self.reqs):
