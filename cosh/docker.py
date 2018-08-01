@@ -105,6 +105,7 @@ class DockerEnvironment:
     home = os.environ.get('HOME')
     pwd = os.getcwd()
     dev = '/dev'
+    ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
 
     mounts = DockerEnvironment.__root_mount(pwd, 'root')
     if not pwd == tmp:
@@ -119,12 +120,11 @@ class DockerEnvironment:
       mounts += DockerEnvironment.__root_mount(DockerEnvironment.DOCKER_SOCK, 'docker.sock')
 
     mounts += DockerEnvironment.__root_mount(dev, 'dev')
-
     mounts += [DockerMount(source=source, target='/sbin/%s' % command, readonly=True)
                for command, source in provisioning.items()]
-
     mounts += [DockerMount(source=source, target=target) for source, target in extra_mount]
-
+    if ssh_auth_sock:
+      mounts += [DockerMount(source=ssh_auth_sock, target=ssh_auth_sock)]
     return mounts
 
   def workdir(self):
@@ -139,7 +139,8 @@ class DockerEnvironment:
                             else None)
 
     envs = [
-      'HOME=%s' % (DockerEnvironment.CONTAINER_HOME if home == DockerEnvironment.FS_ROOT else home)
+      'HOME=%s' % (DockerEnvironment.CONTAINER_HOME if home == DockerEnvironment.FS_ROOT else home),
+      'SSH_AUTH_SOCK'
     ]
 
     if docker_host:
