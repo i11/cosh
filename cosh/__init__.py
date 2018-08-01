@@ -44,7 +44,7 @@ class Cosh():
     version = ''
     if len(maybe_versioned_command) > 1:
       version = maybe_versioned_command[1]
-    if command_name in remote_commands:
+    elif command_name in remote_commands:
       version = versioned_commands[command_name]
 
     if not (command_name in remote_commands and version):
