@@ -107,7 +107,9 @@ class DockerEnvironment:
     dev = '/dev'
     ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
 
-    mounts = DockerEnvironment.__root_mount(pwd, 'root')
+    mounts = [DockerMount(source='$(pwd)',
+                          target=('/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT
+                                  else '$(pwd)'))]
     if not pwd == tmp:
       mounts += DockerEnvironment.__root_mount(tmp, 'tmp')
     if not pwd == home:
@@ -128,8 +130,7 @@ class DockerEnvironment:
     return mounts
 
   def workdir(self):
-    pwd = os.getcwd()
-    return '/mount/root' if pwd == DockerEnvironment.FS_ROOT else pwd
+    return '/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT else '$(pwd)'
 
   def environment(self):
     home = os.environ.get('HOME')
