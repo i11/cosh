@@ -40,6 +40,7 @@ cosh sbt
 
 ## Advanced examples
 
+### Use cosh to do a maven build
 ```bash
 # Cloning repo
 cosh git clone https://github.com/i11/jackson-datatype-datastore
@@ -47,6 +48,19 @@ cd jackson-datatype-datastore
 
 # Compiling and running tests. Specific version is required since project depends on java8
 cosh mvn:3.5.4-java8-2 clean test
+```
+
+### Use cosh for gcloud as docker's credntial helper
+```bash
+# Configure docker's gcloud credntial helper
+cosh gcloud auth configure-docker
+
+# Docker insists on matching executable in the PATH
+echo 'cosh docker-credential-gcloud "$@"' > /usr/loca/bin/docker-credential-gcloud
+chmod +x /usr/loca/bin//docker-credential-gcloud
+
+# Get your image
+docker pull gcr.io/your-project/your-image-name:tag
 ```
 
 See https://store.docker.com/profiles/actions for more available commands.
