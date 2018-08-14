@@ -1,6 +1,7 @@
 import logging
 import os
 import stat
+import subprocess
 
 import requests
 
@@ -50,10 +51,7 @@ class DockerMount:
 
 class DockerTerminalClient:
 
-  def run_command(self,
-                  image,
-                  arguments,
-                  **kwargs):
+  def run_command(self, image, arguments, **kwargs):
     volume_mounts = ' '.join('%s-v %s:%s'
                              % ('--read-only '
                                 if mount.readonly else '', mount.source, mount.target)
@@ -72,13 +70,10 @@ class DockerTerminalClient:
       image,
       ' '.join(arguments))
 
-  def run(self,
-          image,
-          arguments,
-          **kwargs):
+  def run(self, image, arguments, **kwargs):
     cmd = self.run_command(image, arguments, **kwargs)
     logging.debug('Running command:\n%s' % cmd)
-    return os.system(cmd)
+    return subprocess.call(cmd, shell=True, close_fds=True, preexec_fn=os.setsid)
 
 
 class DockerEnvironment:
