@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from cosh.docker import DockerReigstryClient, DockerTerminalClient, DockerMount
 from cosh.provisioners import DockerProvisioner, CommandsProvisioner
@@ -72,4 +73,4 @@ class Cosh():
                environment=self.env.environment(),
                mounts=self.env.mounts(tmp=self.tmpdir.base(), provisioning=provisioning),
                working_dir=self.env.workdir(),
-               tty=True)
+               tty=sys.stdin.isatty())

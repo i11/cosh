@@ -8,8 +8,7 @@ import requests
 
 class DockerReigstryClient:
 
-  def __init__(self, hub='registry.hub.docker.com',
-               store='store.docker.com'):
+  def __init__(self, hub='registry.hub.docker.com', store='store.docker.com'):
     self.store = store
     self.hub = hub
 

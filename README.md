@@ -46,7 +46,7 @@ cosh git clone https://github.com/i11/jackson-datatype-datastore
 cd jackson-datatype-datastore
 
 # Compiling and running tests. Specific version is required since project depends on java8
-cosh mvn:3.5.4-java8-1 clean test
+cosh mvn:3.5.4-java8-2 clean test
 ```
 
 See https://store.docker.com/profiles/actions for more available commands.
@@ -54,7 +54,7 @@ See https://store.docker.com/profiles/actions for more available commands.
 ## Limitations
 
 * The project is at very very very early stage. It is profoundly raw and has a lot of quirks at this point in time.
-* No tty/pty support 
+* Limited tty/pty support
 
 ## Contribution
 
