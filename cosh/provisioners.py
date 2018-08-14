@@ -73,8 +73,8 @@ class CommandsProvisioner:
         file = open(file_name, 'w')
         file.write(
           'cmd=$(basename ${BASH_SOURCE[0]})\n'
-          'test -x /bin/$cmd && '
-          'exec /bin/$cmd "$@"\n'
+          'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
+          'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
           'test -t 1 && export USE_TTY="-t"\n'
           'exec %s'
           % (self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
