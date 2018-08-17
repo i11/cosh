@@ -7,16 +7,10 @@ from cosh.docker import DockerEnvironment
 
 
 def get():
-  parser = argparse.ArgumentParser(
-    description='Container shell',
-    prog='cosh'
-  )
-  parser.add_argument('--debug', type=bool,
-                      default=False,
-                      help='Turn on debug logging')
-  parser.add_argument('--no-cache', type=bool,
-                      default=False,
-                      help='Ignore cache')
+  parser = argparse.ArgumentParser(description='Container shell', prog='cosh')
+
+  parser.add_argument('--debug', dest='debug', action='store_true', help='Turn on debug logging')
+  parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
   # TODO: Support multiple prefixes
   parser.add_argument('--image-prefix', type=str, required=False,
                       default='actions/',
@@ -24,8 +18,12 @@ def get():
                            'all given command names')
   parser.add_argument('command', type=str,
                       help='Command to execute')
-  parser.add_argument('arguments', type=str, nargs='*',
+  parser.add_argument('arguments', type=str, nargs=argparse.REMAINDER,
                       help='Command arguments')
+
+  parser.set_defaults(debug=False)
+  parser.set_defaults(cache=True)
+
   args = parser.parse_args()
 
   if args.debug:
@@ -33,7 +31,7 @@ def get():
   else:
     logging.basicConfig(level=logging.INFO)
 
-  cache = NoCache() if args.no_cache else FileCache()
+  cache = FileCache() if args.cache else NoCache()
 
   cosh = Cosh(env=DockerEnvironment(),
               cache=cache,
