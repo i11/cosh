@@ -2,75 +2,74 @@ import logging
 import sys
 
 from cosh.docker import DockerReigstryClient, DockerTerminalClient, DockerMount
+from cosh.misc import Printable
 from cosh.provisioners import DockerProvisioner, CommandsProvisioner
 from cosh.requirements import DockerRequirement
 from cosh.tmpdir import Tmpdir
 
 
-class Cosh():
-  def __init__(self, env, cache, prefix, reqs=[]):
+class Cosh(Printable):
+  def __init__(self, env, cache, repositories, reqs=[]):
     self.env = env
-    self.prefix = ('%s/' % prefix.rstrip('/')) if prefix else ''
+    self.repositories = repositories
     self.reqs = reqs
     self.cache = cache
-    self.registry = DockerReigstryClient()
     self.tmpdir = Tmpdir()
 
-  def latest_version(self, command):
-    tags = self.registry.tags(command, organisation=self.prefix)
-    for tag in tags:
-      if tag['name'] == 'latest':
-        return 'latest'
-    return tags[0]['name'] if tags else None
-
-  def remote_commands(self):
-    return list(set([repo['name'].split('/')[1] for repo in self.registry.search_hub(self.prefix)] \
-                    + [repo['name'] for repo in self.registry.list_store_repos(self.prefix)]))
+  def repository_records(self):
+    return list(
+        set([record for repo in self.repositories for record in repo.list()
+             if record.tags and not record.name == 'docker']
+            ))
 
   def run_checks(self):
     for req in ([DockerRequirement()] + self.reqs):
       req.check()
 
   def run(self, command_str, args):
-    logging.debug('Fetching all remote commands...')
-    remote_commands = [command for command in self.cache.load(self.remote_commands) if
-                       not command in ['docker']]
-    versioned_commands = {command: self.cache.load(self.latest_version, command) for command in
-                          remote_commands if self.cache.load(self.latest_version, command)}
+    logging.debug('Fetching all repository records...')
+    repository_records = self.cache.load(self.repository_records)
+    logging.debug('Repository records: %s' % repository_records)
 
     maybe_versioned_command = command_str.split(':')
     command_name = maybe_versioned_command[0]
     logging.debug('Executing command %s with arguments %s' % (command_name, args))
 
-    version = ''
+    command_record = None
+    for record in repository_records:
+      if command_name == record.name:
+        command_record = record
+
     if len(maybe_versioned_command) > 1:
       version = maybe_versioned_command[1]
-    elif command_name in remote_commands:
-      version = versioned_commands[command_name]
+    elif command_record:
+      version = command_record.tags[0]
 
-    if not (command_name in remote_commands and version):
+    if not (command_record and version):
       raise Exception('%s command not found' % command_str)
 
-    logging.debug("Provisioning...")
-    provisioning = {}
+    placed_records = [
+      {'record': record, 'path': ('%s/%s' % (self.tmpdir.bin().rstrip('/'), record.name))}
+      for record in repository_records
+    ]
 
-    docker_prov = DockerProvisioner(self.tmpdir.tmp())
-    provisioning.update(docker_prov.provision())
+    logging.debug("Provisioning...")
+    extra_mounts = DockerProvisioner(self.tmpdir.tmp()).provision()
 
     docker = DockerTerminalClient()
 
-    commands_prov = CommandsProvisioner(tmp=self.tmpdir.base(),
-                                        docker=docker,
-                                        env=self.env,
-                                        basedir=self.tmpdir.bin(),
-                                        prefix=self.prefix,
-                                        versioned_commands=versioned_commands)
-    provisioning.update(commands_prov.provision())
+    CommandsProvisioner(tmp=self.tmpdir.base(),
+                        docker=docker,
+                        env=self.env,
+                        placed_records=placed_records) \
+      .provision()
 
-    docker.run(image='%s%s:%s' % (self.prefix, command_name, version),
+    docker.run(image='%s:%s' % (command_record.image_name, version),
                arguments=args,
                auto_remove=True,
                environment=self.env.environment(),
-               mounts=self.env.mounts(tmp=self.tmpdir.base(), provisioning=provisioning),
+               mounts=self.env.mounts(tmp=self.tmpdir.base(),
+                                      placed_records=placed_records,
+                                      extra_mount=extra_mounts),
                working_dir=self.env.workdir(),
                tty=sys.stdin.isatty())

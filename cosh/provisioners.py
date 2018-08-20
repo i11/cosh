@@ -7,6 +7,8 @@ import time
 
 import requests
 
+from cosh.misc import Printable
+
 
 def download_file(url, filename):
   r = requests.get(url, stream=True)
@@ -25,7 +27,7 @@ def sha256_checksum(filename, block_size=65536):
   return sha256.hexdigest()
 
 
-class DockerProvisioner:
+class DockerProvisioner(Printable):
   __docker_static_url = 'https://download.docker.com/linux/static/stable/x86_64/' \
                         'docker-18.06.0-ce.tgz'
   __docker_static_sha256 = '1c2fa625496465c68b856db0ba850eaad7a16221ca153661ca718de4a2217705'
@@ -45,50 +47,43 @@ class DockerProvisioner:
         docker_tgz.extractall(self.basedir, members=[member for member in docker_tgz.getmembers()])
       else:
         raise Exception('sha256 mismatch for %s' % local_docker_tgz)
-    return {'docker': target}
+    return {target: '/sbin/docker'}
 
 
-class CommandsProvisioner:
+class CommandsProvisioner(Printable):
 
-  def __init__(self, tmp, docker, env, basedir, prefix, versioned_commands, ttl=120 * 60):
+  def __init__(self, tmp, docker, env, placed_records, ttl=120 * 60):
     self.tmp = tmp
     self.ttl = ttl
     self.docker = docker
     self.env = env
-    self.prefix = prefix
-    self.versioned_commands = versioned_commands
-    self.basedir = basedir
-    self.command_provisioning = {command: '%s/%s' % (self.basedir.rstrip('/'), command)
-                                 for command, version in self.versioned_commands.items()}
+    self.placed_records = placed_records
 
   def provision(self):
-    targets = {}
-    logging.debug('Provisioning commands: %s' % self.versioned_commands)
+    logging.debug('Provisioning commands: %s' % self.placed_records)
     # login_flag = ' -l' if self.interactive else ''
 
-    for command, version in self.versioned_commands.items():
-      logging.debug('Provisioning command: %s:%s' % (command, version))
-      file_name = '%s/%s' % (self.basedir, command)
-      if not os.path.exists(file_name) or time.time() - os.path.getctime(file_name) > self.ttl:
-        file = open(file_name, 'w')
+    for placed_record in self.placed_records:
+      logging.debug('Provisioning command: %s:%s' % (
+        placed_record['record'].name, placed_record['record'].tags[0]))
+      if not os.path.exists(placed_record['path']) or time.time() - os.path.getctime(
+          placed_record['path']) > self.ttl:
+        file = open(placed_record['path'], 'w')
         file.write(
-          'cmd=$(basename ${BASH_SOURCE[0]})\n'
-          'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
-          'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
-          'test -t 1 && export USE_TTY="-t"\n'
-          'exec %s'
-          % (self.docker.run_command(image='%s%s:%s' % (self.prefix, command, version),
-                                     arguments=["$@"],
-                                     auto_remove=True,
-                                     environment=self.env.environment(),
-                                     mounts=self.env.mounts(tmp=self.tmp,
-                                                            provisioning=self.command_provisioning),
-                                     working_dir=self.env.workdir(),
-                                     custom='${USE_TTY}')))
+            'cmd=$(basename ${BASH_SOURCE[0]})\n'
+            'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
+            'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
+            'test -t 1 && export USE_TTY="-t"\n'
+            'exec %s'
+            % (self.docker.run_command(image='%s:%s' % (
+              placed_record['record'].image_name, placed_record['record'].tags[0]),
+                                       arguments=["$@"],
+                                       auto_remove=True,
+                                       environment=self.env.environment(),
+                                       mounts=self.env.mounts(tmp=self.tmp,
+                                                              placed_records=self.placed_records),
+                                       working_dir=self.env.workdir(),
+                                       custom='${USE_TTY}')))
         file.close()
-        st = os.stat(file_name)
-        os.chmod(file_name, st.st_mode | stat.S_IEXEC)
-
-      logging.debug('Add command %s to %s target' % (command, file_name))
-      targets.update(dict([(command, file_name)]))
-    return targets
+        st = os.stat(placed_record['path'])
+        os.chmod(placed_record['path'], st.st_mode | stat.S_IEXEC)

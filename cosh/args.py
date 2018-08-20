@@ -4,6 +4,7 @@ import logging
 from cosh import Cosh
 from cosh.cache import FileCache, NoCache
 from cosh.docker import DockerEnvironment
+from cosh.docker.repositories import DockerRepositoryFactory
 
 
 def get():
@@ -11,11 +12,10 @@ def get():
 
   parser.add_argument('--debug', dest='debug', action='store_true', help='Turn on debug logging')
   parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
-  # TODO: Support multiple prefixes
-  parser.add_argument('--image-prefix', type=str, required=False,
-                      default='actions/',
-                      help='Docker image name prefix that will be used to prefix '
-                           'all given command names')
+  parser.add_argument('-r', '--repository', type=str, required=False, action='append',
+                      help='Docker image repository that will be used as a prefix.'
+                           ' Multiple values are supported.'
+                           ' The first value takes the precedence for images with the same name.')
   parser.add_argument('command', type=str,
                       help='Command to execute')
   parser.add_argument('arguments', type=str, nargs=argparse.REMAINDER,
@@ -26,6 +26,9 @@ def get():
 
   args = parser.parse_args()
 
+  if not args.repository:
+    args.repository = ['actions/']
+
   if args.debug:
     logging.basicConfig(level=logging.DEBUG)
   else:
@@ -33,8 +36,11 @@ def get():
 
   cache = FileCache() if args.cache else NoCache()
 
+  logging.debug('Got repositories: %s' % args.repository)
+  repositories = [DockerRepositoryFactory(repo).versions().pop() for repo in args.repository]
+
   cosh = Cosh(env=DockerEnvironment(),
               cache=cache,
-              prefix=args.image_prefix)
+              repositories=repositories)
   cosh.run_checks()
   cosh.run(args.command, args.arguments)

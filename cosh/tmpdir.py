@@ -2,8 +2,10 @@ import os
 import platform
 import tempfile
 
+from cosh.misc import Printable
 
-class Tmpdir:
+
+class Tmpdir(Printable):
 
   @classmethod
   def __create(cls, __dir):

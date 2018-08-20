@@ -22,11 +22,11 @@ cosh git status
 ```
 
 ```bash
-cosh java -- -version
+cosh java -version
 ```
 
 ```bash
-cosh java:8-jdk-latest -- -version
+cosh java:8-jdk-latest -version
 ```
 
 ```bash

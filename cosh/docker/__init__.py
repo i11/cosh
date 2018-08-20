@@ -5,8 +5,10 @@ import subprocess
 
 import requests
 
+from cosh.misc import Printable
 
-class DockerReigstryClient:
+
+class DockerReigstryClient(Printable):
 
   def __init__(self, hub='registry.hub.docker.com', store='store.docker.com'):
     self.store = store
@@ -41,14 +43,14 @@ class DockerReigstryClient:
     return r.json()
 
 
-class DockerMount:
+class DockerMount(Printable):
   def __init__(self, source, target, readonly=False):
     self.readonly = readonly
     self.target = target
     self.source = source
 
 
-class DockerTerminalClient:
+class DockerTerminalClient(Printable):
 
   def run_command(self, image, arguments, **kwargs):
     volume_mounts = ' '.join('%s-v %s:%s'
@@ -75,7 +77,7 @@ class DockerTerminalClient:
     return subprocess.call(cmd, shell=True, close_fds=True, preexec_fn=os.setsid)
 
 
-class DockerEnvironment:
+class DockerEnvironment(Printable):
   FS_ROOT = '/'
   CONTAINER_HOME = '/home'
   DOCKER_SOCK = '/var/run/docker.sock'
@@ -95,7 +97,7 @@ class DockerEnvironment:
       target = destination if destination else ('/mount/%s' % name)
     return [DockerMount(source=source, target=target)]
 
-  def mounts(self, tmp, provisioning, extra_mount={}):
+  def mounts(self, tmp, placed_records, extra_mount={}):
     home = os.environ.get('HOME')
     pwd = os.getcwd()
     dev = '/dev'
@@ -116,9 +118,13 @@ class DockerEnvironment:
       mounts += DockerEnvironment.__root_mount(DockerEnvironment.DOCKER_SOCK, 'docker.sock')
 
     mounts += DockerEnvironment.__root_mount(dev, 'dev')
-    mounts += [DockerMount(source=source, target='/sbin/%s' % command, readonly=True)
-               for command, source in provisioning.items()]
-    mounts += [DockerMount(source=source, target=target) for source, target in extra_mount]
+    mounts += [
+      DockerMount(source=placed_record['path'],
+                  target=('/sbin/%s' % placed_record['record'].name),
+                  readonly=True)
+      for placed_record in placed_records
+    ]
+    mounts += [DockerMount(source=source, target=target) for source, target in extra_mount.items()]
     if ssh_auth_sock:
       mounts += [DockerMount(source=ssh_auth_sock, target=ssh_auth_sock)]
     return mounts

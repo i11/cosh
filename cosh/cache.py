@@ -1,9 +1,10 @@
-import codecs
-import json
 import logging
 import os
 import time
 
+import jsonpickle
+
+from cosh.misc import Printable
 from cosh.tmpdir import Tmpdir
 
 
@@ -16,11 +17,11 @@ def func_call(fn_ref, *fn_args):
   is_object = '__func__' in fn_ref.__dir__()
   decrement = 1 if is_object else 0
   fn_arg_size = len(
-    fn_ref.__func__.__code__.co_varnames if is_object else fn_ref.__code__.co_varnames) - decrement
+      fn_ref.__func__.__code__.co_varnames if is_object else fn_ref.__code__.co_varnames) - decrement
   return fn_ref.__call__(*fn_args) if fn_arg_size > 0 else fn_ref.__call__()
 
 
-class FileCache:
+class FileCache(Printable):
 
   def __init__(self, ttl=10 * 60):
     self.ttl = ttl
@@ -29,29 +30,42 @@ class FileCache:
   def load(self, fn_ref, *fn_args):
     logging.debug('Loading file cache for %s with %s' % (fn_ref, fn_args))
     file_name = '%s/%s%s.json' % (
-      self.tmpdir.cache(), func_ref_name(fn_ref), ('_' + '_'.join(fn_args) if fn_args else ''))
+      self.tmpdir.cache(),
+      func_ref_name(fn_ref),
+      ('_' + '_'.join(fn_args) if fn_args else '')
+    )
 
     if os.path.exists(file_name):
-      ctime = os.path.getctime(file_name)
-      if time.time() - ctime > self.ttl:
+      with open(file_name) as f:
+        cache = jsonpickle.decode(f.read())
+
+      if time.time() - cache['timestamp'] > self.ttl or not cache['instance'] == fn_ref.__self__:
         logging.debug('Cache expired. Refreshing...')
-        result = func_call(fn_ref, *fn_args)
-        logging.debug('Writing results: %s' % result)
+        cache = {
+          'instance': fn_ref.__self__,
+          'result': func_call(fn_ref, *fn_args),
+          'timestamp': time.time()
+        }
+        logging.debug('Writing cache: %s' % cache)
         with open(file_name, 'wb') as f:
-          json.dump(result, codecs.getwriter('utf-8')(f), ensure_ascii=False)
+          f.write(jsonpickle.encode(cache).encode('utf-8'))
+          f.flush()
       else:
         logging.debug('Valid cache found. Loading...')
-        with open(file_name) as f:
-          result = json.load(f)
     else:
       logging.debug('No cache found. Refreshing...')
-      result = func_call(fn_ref, *fn_args)
-      logging.debug('Writing results: %s' % result)
+      cache = {
+        'instance': fn_ref.__self__,
+        'result': func_call(fn_ref, *fn_args),
+        'timestamp': time.time()
+      }
+      logging.debug('Writing cache: %s' % cache)
       with open(file_name, 'wb') as f:
-        json.dump(result, codecs.getwriter('utf-8')(f), ensure_ascii=False)
-    return result
+        f.write(jsonpickle.encode(cache).encode('utf-8'))
+        f.flush()
+    return cache['result']
 
 
-class NoCache:
+class NoCache(Printable):
   def load(self, fn_ref, *fn_args):
     return func_call(fn_ref, *fn_args)
