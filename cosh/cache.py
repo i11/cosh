@@ -23,7 +23,7 @@ def func_call(fn_ref, *fn_args):
 
 class FileCache(Printable):
 
-  def __init__(self, ttl=10 * 60):
+  def __init__(self, ttl=1 * 60 * 60):
     self.ttl = ttl
     self.tmpdir = Tmpdir()
 
