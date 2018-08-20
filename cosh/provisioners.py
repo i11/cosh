@@ -3,7 +3,6 @@ import logging
 import os
 import stat
 import tarfile
-import time
 
 import requests
 
@@ -52,9 +51,8 @@ class DockerProvisioner(Printable):
 
 class CommandsProvisioner(Printable):
 
-  def __init__(self, tmp, docker, env, placed_records, ttl=120 * 60):
-    self.tmp = tmp
-    self.ttl = ttl
+  def __init__(self, extra_mounts, docker, env, placed_records):
+    self.extra_mounts = extra_mounts
     self.docker = docker
     self.env = env
     self.placed_records = placed_records
@@ -66,23 +64,22 @@ class CommandsProvisioner(Printable):
     for placed_record in self.placed_records:
       logging.debug('Provisioning command: %s:%s' % (
         placed_record['record'].name, placed_record['record'].tags[0]))
-      if not os.path.exists(placed_record['path']) or time.time() - os.path.getctime(
-          placed_record['path']) > self.ttl:
-        file = open(placed_record['path'], 'w')
-        file.write(
-            'cmd=$(basename ${BASH_SOURCE[0]})\n'
-            'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
-            'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
-            'test -t 1 && export USE_TTY="-t"\n'
-            'exec %s'
-            % (self.docker.run_command(image='%s:%s' % (
-              placed_record['record'].image_name, placed_record['record'].tags[0]),
-                                       arguments=["$@"],
-                                       auto_remove=True,
-                                       environment=self.env.environment(),
-                                       mounts=self.env.mounts(placed_records=self.placed_records),
-                                       working_dir=self.env.workdir(),
-                                       custom='${USE_TTY}')))
-        file.close()
-        st = os.stat(placed_record['path'])
-        os.chmod(placed_record['path'], st.st_mode | stat.S_IEXEC)
+      file = open(placed_record['path'], 'w')
+      file.write(
+          'cmd=$(basename ${BASH_SOURCE[0]})\n'
+          'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
+          'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
+          'test -t 1 && export USE_TTY="-t"\n'
+          'exec %s'
+          % (self.docker.run_command(image='%s:%s' % (
+            placed_record['record'].image_name, placed_record['record'].tags[0]),
+                                     arguments=["$@"],
+                                     auto_remove=True,
+                                     environment=self.env.environment(),
+                                     mounts=self.env.mounts(extra_mounts=self.extra_mounts,
+                                                            placed_records=self.placed_records),
+                                     working_dir=self.env.workdir(),
+                                     custom='${USE_TTY}')))
+      file.close()
+      st = os.stat(placed_record['path'])
+      os.chmod(placed_record['path'], st.st_mode | stat.S_IEXEC)

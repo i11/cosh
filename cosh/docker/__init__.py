@@ -71,6 +71,8 @@ class DockerEnvironment(Printable):
     __extra_mounts.update(extra_mounts)
     __extra_mounts.update(self.extra_volumes)
 
+    logging.debug('Extra mounts: %s' % __extra_mounts)
+
     pwd = os.getcwd()
     dev = '/dev'
     ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
@@ -133,6 +135,8 @@ class DockerEnvironment(Printable):
           merged_envs += ['%s%s' % (env_split[0], ('=%s' % value if value else ''))]
       else:
         merged_envs += [env]
+
+    logging.debug('Merged envs: %s' % merged_envs)
     return list(set(merged_envs))
 
   @classmethod

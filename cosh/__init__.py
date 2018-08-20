@@ -58,7 +58,7 @@ class Cosh(Printable):
 
     docker = DockerTerminalClient()
 
-    CommandsProvisioner(tmp=self.tmpdir.base(),
+    CommandsProvisioner(extra_mounts=extra_mounts,
                         docker=docker,
                         env=self.env,
                         placed_records=placed_records) \
@@ -72,3 +72,31 @@ class Cosh(Printable):
                                       extra_mounts=extra_mounts),
                working_dir=self.env.workdir(),
                tty=sys.stdin.isatty())
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) \
+           and ((self.tmpdir, self.repositories, self.cache)
+                == (other.tmpdir, other.repositories, other.cache))
+
+  def __ne__(self, other):
+    return ((self.tmpdir, self.repositories, self.cache)
+            != (other.tmpdir, other.repositories, other.cahe))
+
+  def __lt__(self, other):
+    return ((self.tmpdir, self.repositories, self.cache)
+            < (other.tmpdir, other.repositories, other.cahe))
+
+  def __le__(self, other):
+    return ((self.tmpdir, self.repositories, self.cache)
+            <= (other.tmpdir, other.repositories, other.cahe))
+
+  def __gt__(self, other):
+    return ((self.tmpdir, self.repositories, self.cache)
+            > (other.tmpdir, other.repositories, other.cahe))
+
+  def __ge__(self, other):
+    return ((self.tmpdir, self.repositories, self.cache)
+            >= (other.tmpdir, other.repositories, other.cahe))
+
+  def __hash__(self):
+    return hash((self.tmpdir, self.repositories, self.cache))

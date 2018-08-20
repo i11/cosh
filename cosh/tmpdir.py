@@ -13,13 +13,14 @@ class Tmpdir(Printable):
 
   @classmethod
   def default_instance(cls):
-    return Tmpdir(('/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()).rstrip('/'))
+    basedir = ('/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()).rstrip('/')
+    return Tmpdir(basedir)
 
-  def __init__(self, basedir):
+  def __init__(self, basedir, cachedir=None):
     self.__basedir = basedir
     self.__tmpdir = '%s/cosh' % self.__basedir
     self.__bindir = '%s/bin' % self.__tmpdir
-    self.__cachedir = '%s/cache' % self.__tmpdir
+    self.__cachedir = cachedir if cachedir else '%s/cache' % self.__tmpdir
 
   def base(self):
     return self.__basedir

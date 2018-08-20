@@ -5,7 +5,6 @@ import time
 import jsonpickle
 
 from cosh.misc import Printable
-from cosh.tmpdir import Tmpdir
 
 
 def func_ref_name(fn_ref):

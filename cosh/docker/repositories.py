@@ -20,24 +20,61 @@ class DockerRepositoryRecord(Printable):
     self.namespace = namespace
     self.image_name = ('%s/%s/%s' % (repository if repository else '', namespace, name)).lstrip('/')
 
-  def __cmp__(self, other):
-    if self.name > other.name: return 1
-    if self.name < other.name: return -1
-    return 0
-
   def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.name == other.name
+    return isinstance(other, self.__class__) and ((self.name) == (other.name))
+
+  def __ne__(self, other):
+    return self.name != other.name
+
+  def __lt__(self, other):
+    return self.name < other.name
+
+  def __le__(self, other):
+    return self.name <= other.name
+
+  def __gt__(self, other):
+    return self.name > other.name
+
+  def __ge__(self, other):
+    return self.name >= other.name
 
   def __hash__(self):
     return hash(self.name)
 
 
-class DockerRepositoryV1(Printable):
+class ComperableRepository:
+  def __init__(self, namespace, name):
+    self.name = name
+    self.namespace = namespace
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) \
+           and ((self.name, self.namespace) == (other.name, other.namespace))
+
+  def __ne__(self, other):
+    return (self.name, self.namespace) != (other.name, other.namespace)
+
+  def __lt__(self, other):
+    return (self.name, self.namespace) < (other.name, other.namespace)
+
+  def __le__(self, other):
+    return (self.name, self.namespace) <= (other.name, other.namespace)
+
+  def __gt__(self, other):
+    return (self.name, self.namespace) > (other.name, other.namespace)
+
+  def __ge__(self, other):
+    return (self.name, self.namespace) >= (other.name, other.namespace)
+
+  def __hash__(self):
+    return hash((self.name, self.namespace))
+
+
+class DockerRepositoryV1(Printable, ComperableRepository):
   DEFAULT_VALUE = 'registry.hub.docker.com'
 
   def __init__(self, namespace, name=DEFAULT_VALUE):
-    self.name = name
-    self.namespace = namespace
+    super().__init__(name=name, namespace=namespace)
 
   def tags(self, image_name):
     r = requests.get('https://%s/v1/repositories/%s/%s/tags'
@@ -72,12 +109,11 @@ class DockerRepositoryV1(Printable):
     ]
 
 
-class DockerStore(Printable):
+class DockerStore(Printable, ComperableRepository):
   DEFAULT_NAME = 'store.docker.com'
 
   def __init__(self, namespace, name=DEFAULT_NAME):
-    self.name = name
-    self.namespace = namespace
+    super().__init__(name=name, namespace=namespace)
 
   def __paged_results(self, url):
     r = requests.get(url)
@@ -173,8 +209,31 @@ class DockerRepositoryGcr:
 
   def __eq__(self, other):
     return isinstance(other, self.__class__) \
-           and self.name == other.name \
-           and self.namespace == self.namespace
+           and ((self.name, self.namespace, self.gcr_key_file)
+                == (other.name, other.namespace, other.gcr_key_file))
+
+  def __ne__(self, other):
+    return ((self.name, self.namespace, self.gcr_key_file)
+            != (other.name, other.namespace, other.gcr_key_file))
+
+  def __lt__(self, other):
+    return ((self.name, self.namespace, self.gcr_key_file)
+            < (other.name, other.namespace, other.gcr_key_file))
+
+  def __le__(self, other):
+    return ((self.name, self.namespace, self.gcr_key_file)
+            <= (other.name, other.namespace, other.gcr_key_file))
+
+  def __gt__(self, other):
+    return ((self.name, self.namespace, self.gcr_key_file)
+            > (other.name, other.namespace, other.gcr_key_file))
+
+  def __ge__(self, other):
+    return ((self.name, self.namespace, self.gcr_key_file)
+            >= (other.name, other.namespace, other.gcr_key_file))
+
+  def __hash__(self):
+    return hash((self.name, self.namespace, self.gcr_key_file))
 
 
 class DockerRepositoryFactory(Printable):

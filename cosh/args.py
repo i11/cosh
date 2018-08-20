@@ -6,6 +6,7 @@ from cosh import Cosh, Tmpdir
 from cosh.cache import FileCache, NoCache
 from cosh.docker import DockerEnvironment
 from cosh.docker.repositories import DockerRepositoryFactory
+from cosh.lock import Mutex
 
 
 def get():
@@ -15,7 +16,11 @@ def get():
   parser.add_argument('--tmpdir', default=Tmpdir.default_instance().base(), type=str,
                       help='Set tmp path to be mounted for containers')
   parser.add_argument('--debug', dest='debug', action='store_true', help='Turn on debug logging')
+  parser.add_argument('--cache-dir', type=str, required=False,
+                      help='Repository record cache directory')
   parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
+  parser.add_argument('--lock-ttl', default=1 * 60 * 60, type=int,
+                      help='Execution lock ttl in seconds')
   parser.add_argument('-r', '--repository', dest='repositories',
                       type=str, required=False, action='append',
                       help='Docker image repository that will be used as a prefix.'
@@ -44,17 +49,21 @@ def get():
 
   args = parser.parse_args()
 
-  volumes = {volume.split(':')[0]: volume.split(':')[1] for volume in args.volumes}
-
-  if not args.repositories:
-    args.repositories = ['actions/']
-
   if args.debug:
     logging.basicConfig(level=logging.DEBUG)
   else:
     logging.basicConfig(level=logging.INFO)
 
-  tmpdir = Tmpdir(args.tmpdir)
+  tmpdir = Tmpdir(basedir=args.tmpdir, cachedir=args.cache_dir)
+
+  logging.debug('Locking...')
+  mutex = Mutex(tmpdir=tmpdir.tmp(), ttl=args.lock_ttl)
+  mutex.lock()
+
+  volumes = {volume.split(':')[0]: volume.split(':')[1] for volume in args.volumes}
+
+  if not args.repositories:
+    args.repositories = ['actions/']
 
   cache = FileCache(tmpdir=tmpdir) if args.cache else NoCache()
 
@@ -71,3 +80,5 @@ def get():
               repositories=repositories)
   cosh.run_checks()
   cosh.run(args.command, args.arguments)
+  logging.debug('Unlocking...')
+  mutex.unlock()
