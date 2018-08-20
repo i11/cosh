@@ -50,13 +50,14 @@ cd jackson-datatype-datastore
 cosh mvn:3.5.4-java8-2 clean test
 ```
 
-### Use cosh for gcloud as docker's credntial helper
+### Use cosh for gcloud as docker's credential helper
 ```bash
-# Configure docker's gcloud credntial helper
+# Configure docker's gcloud credential helper
 cosh gcloud auth configure-docker
 
 # Docker insists on matching executable in the PATH
-echo 'cosh docker-credential-gcloud "$@"' > /usr/loca/bin/docker-credential-gcloud
+# Isolate docker-credential-gcloud execution by setting non-default tmpdir
+echo 'cosh --tmpdir /tmp/docker-credential-gcloud docker-credential-gcloud "$@"' > /usr/loca/bin/docker-credential-gcloud
 chmod +x /usr/loca/bin/docker-credential-gcloud
 
 # Get your image
@@ -68,7 +69,6 @@ See https://store.docker.com/profiles/actions for more available commands.
 ## Limitations
 
 * The project is at very very very early stage. It is profoundly raw and has a lot of quirks at this point in time.
-* Limited tty/pty support
 
 ## Contribution
 

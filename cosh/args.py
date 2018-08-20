@@ -82,8 +82,11 @@ def get():
 
   try:
     cosh.run(args.command, args.arguments)
-  except KeyboardInterrupt as e:
-    logging.error('Interrupting...')
+  except BaseException as e:
+    if isinstance(e, KeyboardInterrupt):
+      logging.error('Interrupting...')
+    else:
+      logging.error(e)
     logging.debug('Unlocking...')
     mutex.unlock()
   else:
