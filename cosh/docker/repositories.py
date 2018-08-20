@@ -5,6 +5,7 @@ import warnings
 import google.auth
 import google.auth.transport.requests
 import requests
+from google.oauth2 import service_account
 from natsort import natsorted
 
 from cosh.misc import Printable
@@ -122,7 +123,8 @@ class DockerStore(Printable):
 
 class DockerRepositoryGcr:
 
-  def __init__(self, namespace, name='registry.hub.docker.com'):
+  def __init__(self, namespace, name='registry.hub.docker.com', gcr_key_file=None):
+    self.gcr_key_file = gcr_key_file
     self.name = name
     self.namespace = namespace
     self.__credentials = None
@@ -131,8 +133,15 @@ class DockerRepositoryGcr:
     if not self.__credentials:
       warnings.filterwarnings("ignore",
                               "Your application has authenticated using end user credentials")
-      self.__credentials, project = google.auth.default(
-          scopes=['https://www.googleapis.com/auth/devstorage.read_write'])
+      if self.gcr_key_file:
+        logging.debug('Using key file: %s' % self.gcr_key_file)
+        self.__credentials = service_account.Credentials.from_service_account_file(
+            self.gcr_key_file,
+            scopes=['https://www.googleapis.com/auth/devstorage.read_write'])
+      else:
+        logging.debug('Using default credentials')
+        self.__credentials, project = google.auth.default(
+            scopes=['https://www.googleapis.com/auth/devstorage.read_write'])
     return self.__credentials
 
   def token(self):
@@ -169,7 +178,8 @@ class DockerRepositoryGcr:
 
 
 class DockerRepositoryFactory(Printable):
-  def __init__(self, repository):
+  def __init__(self, repository, gcr_key_file=None):
+    self.gcr_key_file = gcr_key_file
     self.repository = repository
     self.__versions = []
 
@@ -182,7 +192,10 @@ class DockerRepositoryFactory(Printable):
       if m:
         if repo_split[0].endswith('gcr.io'):
           logging.debug('Adding gcr docker repository...')
-          self.__versions += [DockerRepositoryGcr(name=repo_split[0], namespace=repo_split[1])]
+          self.__versions += [
+            DockerRepositoryGcr(name=repo_split[0],
+                                namespace=repo_split[1],
+                                gcr_key_file=self.gcr_key_file)]
         else:
           v1_response = requests.get('https://%s/v1' % self.repository)
           if v1_response.ok:

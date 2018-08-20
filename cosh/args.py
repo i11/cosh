@@ -31,6 +31,8 @@ def get():
                       help='Extra docker environments to be set for containers. '
                            ' Multiple values are allowed.'
                            ' Format: KEY=VALUE. Example: -e MY_VAR=foo')
+  parser.add_argument('--gcr-key-file', type=str, required=False,
+                      help='GCR key file that would be used if gcr.io repository was provided')
 
   parser.add_argument('command', type=str,
                       help='Command to execute')
@@ -57,7 +59,7 @@ def get():
   cache = FileCache(tmpdir=tmpdir) if args.cache else NoCache()
 
   logging.debug('Got repositories: %s' % args.repositories)
-  repositories = [DockerRepositoryFactory(repository).versions().pop()
+  repositories = [DockerRepositoryFactory(repository, args.gcr_key_file).versions().pop()
                   for repository in args.repositories]
 
   cosh = Cosh(tmpdir=tmpdir,
