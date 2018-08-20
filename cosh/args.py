@@ -79,6 +79,13 @@ def get():
               cache=cache,
               repositories=repositories)
   cosh.run_checks()
-  cosh.run(args.command, args.arguments)
-  logging.debug('Unlocking...')
-  mutex.unlock()
+
+  try:
+    cosh.run(args.command, args.arguments)
+  except KeyboardInterrupt as e:
+    logging.error('Interrupting...')
+    logging.debug('Unlocking...')
+    mutex.unlock()
+  else:
+    logging.debug('Unlocking...')
+    mutex.unlock()
