@@ -45,7 +45,9 @@ class DockerEnvironment(Printable):
   CONTAINER_HOME = '/home'
   DOCKER_SOCK = '/var/run/docker.sock'
 
-  def __init__(self, tmpdir_base, home):
+  def __init__(self, tmpdir_base, home, extra_volumes, extra_envs):
+    self.extra_envs = extra_envs
+    self.extra_volumes = extra_volumes
     self.home = home
     self.tmpdir_base = tmpdir_base
 
@@ -64,7 +66,11 @@ class DockerEnvironment(Printable):
       target = destination if destination else ('/mount/%s' % name)
     return [DockerMount(source=source, target=target)]
 
-  def mounts(self, placed_records, extra_mount={}):
+  def mounts(self, placed_records, extra_mounts={}):
+    __extra_mounts = {}
+    __extra_mounts.update(extra_mounts)
+    __extra_mounts.update(self.extra_volumes)
+
     pwd = os.getcwd()
     dev = '/dev'
     ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
@@ -90,7 +96,8 @@ class DockerEnvironment(Printable):
                   readonly=True)
       for placed_record in placed_records
     ]
-    mounts += [DockerMount(source=source, target=target) for source, target in extra_mount.items()]
+    mounts += [DockerMount(source=source, target=target)
+               for source, target in __extra_mounts.items()]
     if ssh_auth_sock:
       mounts += [DockerMount(source=ssh_auth_sock, target=ssh_auth_sock)]
     return mounts
@@ -112,7 +119,21 @@ class DockerEnvironment(Printable):
 
     if docker_host:
       envs += ['DOCKER_HOST=%s' % docker_host]
-    return envs
+
+    # TODO: This is ugly. Redo! Maybe dit instead of string list
+    merged_envs = [] + self.extra_envs
+    for env in envs:
+      env_split = env.split('=')
+      if self.extra_envs:
+        for extra_env in self.extra_envs:
+          extra_env_split = extra_env.split('=')
+          value = (extra_env_split[1] if len(extra_env_split) > 1 else None) \
+            if extra_env_split[0] == env_split[0] \
+            else (env_split[1] if len(env_split) > 1 else None)
+          merged_envs += ['%s%s' % (env_split[0], ('=%s' % value if value else ''))]
+      else:
+        merged_envs += [env]
+    return list(set(merged_envs))
 
   @classmethod
   def create(cls):

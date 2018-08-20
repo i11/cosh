@@ -69,6 +69,6 @@ class Cosh(Printable):
                auto_remove=True,
                environment=self.env.environment(),
                mounts=self.env.mounts(placed_records=placed_records,
-                                      extra_mount=extra_mounts),
+                                      extra_mounts=extra_mounts),
                working_dir=self.env.workdir(),
                tty=sys.stdin.isatty())
