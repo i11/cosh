@@ -3,44 +3,7 @@ import os
 import stat
 import subprocess
 
-import requests
-
 from cosh.misc import Printable
-
-
-class DockerReigstryClient(Printable):
-
-  def __init__(self, hub='registry.hub.docker.com', store='store.docker.com'):
-    self.store = store
-    self.hub = hub
-
-  def list_store_repos(self, organisation='actions'):
-    r = requests.get('https://%s/v2/repositories/%s?page_size=100' % (self.store, organisation))
-    repos = r.json()
-    results = repos['results']
-    while repos['next']:
-      r = requests.get(repos['next'])
-      repos = r.json()
-      results += repos['results']
-    return results
-
-  def search_hub(self, organisation='actions'):
-    r = requests.get('https://%s/v1/search?q=%s' % (self.hub, organisation))
-    search = r.json()
-    search_results = search['results']
-    while search['num_pages'] != search['page']:
-      r = requests.get('https://%s/v1/search?q=%s&page=%d'
-                       % (self.hub, organisation, search['page'] + 1))
-      search = r.json()
-      search_results += search['results']
-
-    return [search_hit for search_hit in search_results
-            if search_hit['name'].startswith('%s/' % organisation.rstrip('/'))]
-
-  def tags(self, repo, organisation='actions'):
-    r = requests.get('https://%s/v1/repositories/%s/%s/tags'
-                     % (self.hub, organisation.rstrip('/'), repo))
-    return r.json()
 
 
 class DockerMount(Printable):
@@ -82,6 +45,10 @@ class DockerEnvironment(Printable):
   CONTAINER_HOME = '/home'
   DOCKER_SOCK = '/var/run/docker.sock'
 
+  def __init__(self, tmpdir_base, home):
+    self.home = home
+    self.tmpdir_base = tmpdir_base
+
   @classmethod
   def __is_socket(cls, path):
     mode = os.stat(path).st_mode
@@ -97,8 +64,7 @@ class DockerEnvironment(Printable):
       target = destination if destination else ('/mount/%s' % name)
     return [DockerMount(source=source, target=target)]
 
-  def mounts(self, tmp, placed_records, extra_mount={}):
-    home = os.environ.get('HOME')
+  def mounts(self, placed_records, extra_mount={}):
     pwd = os.getcwd()
     dev = '/dev'
     ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
@@ -106,13 +72,13 @@ class DockerEnvironment(Printable):
     mounts = [DockerMount(source='$(pwd)',
                           target=('/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT
                                   else '$(pwd)'))]
-    if not pwd == tmp:
-      mounts += DockerEnvironment.__root_mount(tmp, 'tmp')
-    if not pwd == home:
-      mounts += DockerEnvironment.__root_mount(home, 'home')
+    if not (pwd == self.tmpdir_base or '$(pwd)' == self.tmpdir_base):
+      mounts += DockerEnvironment.__root_mount(self.tmpdir_base, 'tmp')
+    if not (pwd == self.home or '$(pwd)' == self.home):
+      mounts += DockerEnvironment.__root_mount(self.home, 'home')
 
-    if not home == DockerEnvironment.CONTAINER_HOME:
-      mounts += DockerEnvironment.__root_mount(home, 'home', '/home')
+    if not self.home == DockerEnvironment.CONTAINER_HOME:
+      mounts += DockerEnvironment.__root_mount(self.home, 'home', '/home')
 
     if DockerEnvironment.__is_socket(DockerEnvironment.DOCKER_SOCK):
       mounts += DockerEnvironment.__root_mount(DockerEnvironment.DOCKER_SOCK, 'docker.sock')
@@ -133,14 +99,14 @@ class DockerEnvironment(Printable):
     return '/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT else '$(pwd)'
 
   def environment(self):
-    home = os.environ.get('HOME')
     docker_host = os.getenv('DOCKER_HOST',
                             ('unix://%s' % DockerEnvironment.DOCKER_SOCK)
                             if DockerEnvironment.__is_socket(DockerEnvironment.DOCKER_SOCK)
                             else None)
 
     envs = [
-      'HOME=%s' % (DockerEnvironment.CONTAINER_HOME if home == DockerEnvironment.FS_ROOT else home),
+      'HOME=%s' % (
+        DockerEnvironment.CONTAINER_HOME if self.home == DockerEnvironment.FS_ROOT else self.home),
       'SSH_AUTH_SOCK'
     ]
 

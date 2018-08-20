@@ -80,8 +80,7 @@ class CommandsProvisioner(Printable):
                                        arguments=["$@"],
                                        auto_remove=True,
                                        environment=self.env.environment(),
-                                       mounts=self.env.mounts(tmp=self.tmp,
-                                                              placed_records=self.placed_records),
+                                       mounts=self.env.mounts(placed_records=self.placed_records),
                                        working_dir=self.env.workdir(),
                                        custom='${USE_TTY}')))
         file.close()

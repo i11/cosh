@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from cosh.docker import DockerReigstryClient, DockerTerminalClient, DockerMount
+from cosh.docker import DockerTerminalClient, DockerMount
 from cosh.misc import Printable
 from cosh.provisioners import DockerProvisioner, CommandsProvisioner
 from cosh.requirements import DockerRequirement
@@ -9,12 +9,12 @@ from cosh.tmpdir import Tmpdir
 
 
 class Cosh(Printable):
-  def __init__(self, env, cache, repositories, reqs=[]):
+  def __init__(self, tmpdir, env, cache, repositories, reqs=[]):
+    self.tmpdir = tmpdir
     self.env = env
     self.repositories = repositories
     self.reqs = reqs
     self.cache = cache
-    self.tmpdir = Tmpdir()
 
   def repository_records(self):
     return list(
@@ -68,8 +68,7 @@ class Cosh(Printable):
                arguments=args,
                auto_remove=True,
                environment=self.env.environment(),
-               mounts=self.env.mounts(tmp=self.tmpdir.base(),
-                                      placed_records=placed_records,
+               mounts=self.env.mounts(placed_records=placed_records,
                                       extra_mount=extra_mounts),
                working_dir=self.env.workdir(),
                tty=sys.stdin.isatty())

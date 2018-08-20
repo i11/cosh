@@ -23,9 +23,9 @@ def func_call(fn_ref, *fn_args):
 
 class FileCache(Printable):
 
-  def __init__(self, ttl=1 * 60 * 60):
+  def __init__(self, tmpdir, ttl=1 * 60 * 60):
+    self.tmpdir = tmpdir
     self.ttl = ttl
-    self.tmpdir = Tmpdir()
 
   def load(self, fn_ref, *fn_args):
     logging.debug('Loading file cache for %s with %s' % (fn_ref, fn_args))

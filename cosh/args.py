@@ -1,7 +1,8 @@
 import argparse
 import logging
+import os
 
-from cosh import Cosh
+from cosh import Cosh, Tmpdir
 from cosh.cache import FileCache, NoCache
 from cosh.docker import DockerEnvironment
 from cosh.docker.repositories import DockerRepositoryFactory
@@ -9,7 +10,10 @@ from cosh.docker.repositories import DockerRepositoryFactory
 
 def get():
   parser = argparse.ArgumentParser(description='Container shell', prog='cosh')
-
+  parser.add_argument('--home', default=os.environ.get('HOME'), type=str,
+                      help='Set home path to be mounted for containers')
+  parser.add_argument('--tmpdir', default=Tmpdir.default_instance().base(), type=str,
+                      help='Set tmp path to be mounted for containers')
   parser.add_argument('--debug', dest='debug', action='store_true', help='Turn on debug logging')
   parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
   parser.add_argument('-r', '--repository', type=str, required=False, action='append',
@@ -34,12 +38,15 @@ def get():
   else:
     logging.basicConfig(level=logging.INFO)
 
-  cache = FileCache() if args.cache else NoCache()
+  tmpdir = Tmpdir(args.tmpdir)
+
+  cache = FileCache(tmpdir=tmpdir) if args.cache else NoCache()
 
   logging.debug('Got repositories: %s' % args.repository)
   repositories = [DockerRepositoryFactory(repo).versions().pop() for repo in args.repository]
 
-  cosh = Cosh(env=DockerEnvironment(),
+  cosh = Cosh(tmpdir=tmpdir,
+              env=DockerEnvironment(tmpdir_base=args.tmpdir, home=args.home),
               cache=cache,
               repositories=repositories)
   cosh.run_checks()
