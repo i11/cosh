@@ -66,6 +66,7 @@ class CommandsProvisioner(Printable):
         placed_record['record'].name, placed_record['record'].tags[0]))
       file = open(placed_record['path'], 'w')
       file.write(
+          '#!/bin/bash -e\n'
           'cmd=$(basename ${BASH_SOURCE[0]})\n'
           'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
           'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
