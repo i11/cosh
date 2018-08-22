@@ -56,8 +56,7 @@ cosh mvn:3.5.4-java8-2 clean test
 cosh gcloud auth configure-docker
 
 # Docker insists on matching executable in the PATH
-# Isolate docker-credential-gcloud execution by setting non-default tmpdir
-echo -e '#!/bin/bash'"\ncosh --tmpdir /tmp/cosh.docker-credential-gcloud docker-credential-gcloud \"$@\"" > /usr/loca/bin/docker-credential-gcloud
+echo -e '#!/bin/bash'"\ncosh docker-credential-gcloud \"$@\"" > /usr/loca/bin/docker-credential-gcloud
 chmod +x /usr/loca/bin/docker-credential-gcloud
 
 # Get your image
