@@ -15,6 +15,9 @@ class DockerMount(Printable):
 
 class DockerTerminalClient(Printable):
 
+  def __init__(self, docker_binary='docker'):
+    self.docker_binary = docker_binary
+
   def run_command(self, image, arguments, **kwargs):
     volume_mounts = ' '.join('%s-v %s:%s'
                              % ('--read-only '
@@ -23,7 +26,8 @@ class DockerTerminalClient(Printable):
     envs = ' '.join('-e %s' % env for env in kwargs['environment']) \
       if 'environment' in kwargs else ''
     attachments = ' '.join('-a %s' % a for a in kwargs['attach']) if 'attach' in kwargs else ''
-    return 'docker run --net=host -i%s%s%s%s%s%s%s %s %s' % (
+    return '%s run --net=host -i%s%s%s%s%s%s%s %s %s' % (
+      self.docker_binary,
       ' %s' % attachments if attachments else '',
       ' -t' if 'tty' in kwargs and kwargs['tty'] else '',
       ' --rm' if 'auto_remove' in kwargs and kwargs['auto_remove'] else '',

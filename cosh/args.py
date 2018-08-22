@@ -5,7 +5,7 @@ from random import Random
 
 from cosh import Cosh
 from cosh.cache import FileCache, NoCache
-from cosh.docker import DockerEnvironment
+from cosh.docker import DockerTerminalClient, DockerEnvironment
 from cosh.docker.repositories import DockerRepositoryFactory
 from cosh.tmpdir import Tmpdir, rmdir
 
@@ -17,6 +17,7 @@ def get():
   parser.add_argument('--tmpdir', default=Tmpdir.default_instance().base(), type=str,
                       help='Set tmp path to be mounted for containers')
   parser.add_argument('--debug', dest='debug', action='store_true', help='Turn on debug logging')
+  parser.add_argument('--docker-binary', default='docker', type=str, help='Docker binary path')
   parser.add_argument('--cache-dir', type=str, required=False,
                       help='Repository record cache directory')
   parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
@@ -77,7 +78,11 @@ def get():
   if not os.path.exists(command_base_dir):
     os.makedirs(command_base_dir)
 
-  cosh = Cosh(tmpdir=tmpdir.tmp(), command_base_dir=command_base_dir,
+  docker_client = DockerTerminalClient(args.docker_binary)
+
+  cosh = Cosh(docker_client=docker_client,
+              tmpdir=tmpdir.tmp(),
+              command_base_dir=command_base_dir,
               env=DockerEnvironment(tmpdir_base=args.tmpdir,
                                     home=args.home,
                                     extra_volumes=volumes,

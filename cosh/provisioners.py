@@ -52,9 +52,9 @@ class DockerProvisioner(Printable):
 
 class CommandsProvisioner(Printable):
 
-  def __init__(self, extra_mounts, docker, env, placed_records):
+  def __init__(self, extra_mounts, docker_client, env, placed_records):
     self.extra_mounts = extra_mounts
-    self.docker = docker
+    self.docker_client = docker_client
     self.env = env
     self.placed_records = placed_records
 
@@ -73,15 +73,15 @@ class CommandsProvisioner(Printable):
           'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
           'test -t 1 && export USE_TTY="-t"\n'
           'exec %s'
-          % (self.docker.run_command(image='%s:%s' % (
+          % (self.docker_client.run_command(image='%s:%s' % (
             placed_record['record'].image_name, placed_record['record'].tags[0]),
-                                     arguments=["$@"],
-                                     auto_remove=True,
-                                     environment=self.env.environment(),
-                                     mounts=self.env.mounts(extra_mounts=self.extra_mounts,
-                                                            placed_records=self.placed_records),
-                                     working_dir=self.env.workdir(),
-                                     custom='${USE_TTY}')))
+                                            arguments=["$@"],
+                                            auto_remove=True,
+                                            environment=self.env.environment(),
+                                            mounts=self.env.mounts(extra_mounts=self.extra_mounts,
+                                                                   placed_records=self.placed_records),
+                                            working_dir=self.env.workdir(),
+                                            custom='${USE_TTY}')))
       file.close()
       st = os.stat(placed_record['path'])
       os.chmod(placed_record['path'], st.st_mode | stat.S_IEXEC)

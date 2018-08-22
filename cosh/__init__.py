@@ -7,7 +7,8 @@ from cosh.provisioners import DockerProvisioner, CommandsProvisioner
 
 
 class Cosh(Printable):
-  def __init__(self, tmpdir, command_base_dir, env, cache, repositories):
+  def __init__(self, docker_client, tmpdir, command_base_dir, env, cache, repositories):
+    self.docker_client = docker_client
     self.tmpdir = tmpdir
     self.command_base_dir = command_base_dir
     self.env = env
@@ -52,15 +53,13 @@ class Cosh(Printable):
     logging.debug("Provisioning...")
     extra_mounts = DockerProvisioner(self.tmpdir).provision()
 
-    docker = DockerTerminalClient()
-
     CommandsProvisioner(extra_mounts=extra_mounts,
-                        docker=docker,
+                        docker_client=self.docker_client,
                         env=self.env,
                         placed_records=placed_records) \
       .provision()
 
-    docker.run(image='%s:%s' % (command_record.image_name, version),
+    self.docker_client.run(image='%s:%s' % (command_record.image_name, version),
                arguments=args,
                auto_remove=True,
                environment=self.env.environment(),
