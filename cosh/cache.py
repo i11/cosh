@@ -22,14 +22,14 @@ def func_call(fn_ref, *fn_args):
 
 class FileCache(Printable):
 
-  def __init__(self, tmpdir, ttl=1 * 60 * 60):
-    self.tmpdir = tmpdir
+  def __init__(self, cachedir, ttl=1 * 60 * 60):
+    self.cachedir = cachedir
     self.ttl = ttl
 
   def load(self, fn_ref, *fn_args):
     logging.debug('Loading file cache for %s with %s' % (fn_ref, fn_args))
     file_name = '%s/%s%s.json' % (
-      self.tmpdir.cache(),
+      self.cachedir,
       func_ref_name(fn_ref),
       ('_' + '_'.join(fn_args) if fn_args else '')
     )

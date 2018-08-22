@@ -1,12 +1,13 @@
 import argparse
 import logging
 import os
+from random import Random
 
-from cosh import Cosh, Tmpdir
+from cosh import Cosh
 from cosh.cache import FileCache, NoCache
 from cosh.docker import DockerEnvironment
 from cosh.docker.repositories import DockerRepositoryFactory
-from cosh.lock import Mutex
+from cosh.tmpdir import Tmpdir, rmdir
 
 
 def get():
@@ -19,8 +20,8 @@ def get():
   parser.add_argument('--cache-dir', type=str, required=False,
                       help='Repository record cache directory')
   parser.add_argument('--no-cache', dest='cache', action='store_false', help='Ignore cache')
-  parser.add_argument('--lock-ttl', default=1 * 60 * 60, type=int,
-                      help='Execution lock ttl in seconds')
+  parser.add_argument('--cache-ttl', default=6 * 60 * 60, type=int,
+                      help='Repository cache ttl in seconds')
   parser.add_argument('-r', '--repository', dest='repositories',
                       type=str, required=False, action='append',
                       help='Docker image repository that will be used as a prefix.'
@@ -54,31 +55,35 @@ def get():
   else:
     logging.basicConfig(level=logging.INFO)
 
+  # TODO: Redesign
   tmpdir = Tmpdir(basedir=args.tmpdir, cachedir=args.cache_dir)
-
-  logging.debug('Locking...')
-  mutex = Mutex(tmpdir=tmpdir.tmp(), ttl=args.lock_ttl)
-  mutex.lock()
 
   volumes = {volume.split(':')[0]: volume.split(':')[1] for volume in args.volumes}
 
   if not args.repositories:
     args.repositories = ['actions/']
 
-  cache = FileCache(tmpdir=tmpdir) if args.cache else NoCache()
+  cache = FileCache(cachedir=tmpdir.cache(), ttl=args.cache_ttl) if args.cache else NoCache()
 
   logging.debug('Got repositories: %s' % args.repositories)
   repositories = [DockerRepositoryFactory(repository, args.gcr_key_file).versions().pop()
                   for repository in args.repositories]
 
-  cosh = Cosh(tmpdir=tmpdir,
+  maybe_versioned_command = args.command.split(':')
+  command_name = maybe_versioned_command[0]
+  command_base_dir = '%s/%s.%d' \
+                     % (tmpdir.bin().rstrip('/'), command_name, Random().randint(10000, 99999))
+  logging.debug('Creating command base dir: %s' % command_base_dir)
+  if not os.path.exists(command_base_dir):
+    os.makedirs(command_base_dir)
+
+  cosh = Cosh(tmpdir=tmpdir.tmp(), command_base_dir=command_base_dir,
               env=DockerEnvironment(tmpdir_base=args.tmpdir,
                                     home=args.home,
                                     extra_volumes=volumes,
                                     extra_envs=args.envs),
               cache=cache,
               repositories=repositories)
-  cosh.run_checks()
 
   try:
     cosh.run(args.command, args.arguments)
@@ -87,8 +92,6 @@ def get():
       logging.error('Interrupting...')
     else:
       logging.error(e)
-    logging.debug('Unlocking...')
-    mutex.unlock()
-  else:
-    logging.debug('Unlocking...')
-    mutex.unlock()
+
+  logging.debug('Cleaning up: %s' % command_base_dir)
+  rmdir(command_base_dir)

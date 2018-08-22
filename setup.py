@@ -46,7 +46,6 @@ setup(
     'bin/cosh'
   ],
   install_requires=[
-    'docker==3.5.0',
     'argparse==1.4.0',
     'requests==2.19.1',
     'google-auth==1.5.1',

@@ -1,8 +1,19 @@
 import os
+import pathlib
 import platform
 import tempfile
 
 from cosh.misc import Printable
+
+
+def rmdir(dir):
+  dir = pathlib.Path(dir)
+  for item in dir.iterdir():
+    if item.is_dir():
+      rmdir(item)
+    else:
+      item.unlink()
+  dir.rmdir()
 
 
 class Tmpdir(Printable):

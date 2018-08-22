@@ -31,19 +31,20 @@ class DockerProvisioner(Printable):
                         'docker-18.06.0-ce.tgz'
   __docker_static_sha256 = '1c2fa625496465c68b856db0ba850eaad7a16221ca153661ca718de4a2217705'
 
-  def __init__(self, basedir):
-    self.basedir = basedir
+  def __init__(self, tmpdir):
+    self.tmpdir = tmpdir
 
   def provision(self):
-    target = '%s/docker/docker' % self.basedir
+    target = '%s/docker/docker' % self.tmpdir
 
     logging.debug('Provisioning docker %s...' % target)
     if not os.path.exists(target):
-      local_docker_tgz = '%s/docker.tgz' % self.basedir
+      local_docker_tgz = '%s/docker.tgz' % self.tmpdir
       download_file(DockerProvisioner.__docker_static_url, local_docker_tgz)
       if sha256_checksum(local_docker_tgz) == DockerProvisioner.__docker_static_sha256:
         docker_tgz = tarfile.open(local_docker_tgz, 'r')
-        docker_tgz.extractall(self.basedir, members=[member for member in docker_tgz.getmembers()])
+        docker_tgz.extractall(self.tmpdir, members=[member for member in docker_tgz.getmembers()])
+        os.remove(local_docker_tgz)
       else:
         raise Exception('sha256 mismatch for %s' % local_docker_tgz)
     return {target: '/sbin/docker'}
