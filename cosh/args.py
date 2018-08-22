@@ -66,7 +66,7 @@ def get():
   cache = FileCache(cachedir=tmpdir.cache(), ttl=args.cache_ttl) if args.cache else NoCache()
 
   logging.debug('Got repositories: %s' % args.repositories)
-  repositories = [DockerRepositoryFactory(repository, args.gcr_key_file).versions().pop()
+  repositories = [DockerRepositoryFactory(repository.strip(), args.gcr_key_file).versions().pop()
                   for repository in args.repositories]
 
   maybe_versioned_command = args.command.split(':')
