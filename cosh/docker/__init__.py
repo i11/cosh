@@ -53,8 +53,7 @@ class DockerEnvironment(Printable):
 
   @classmethod
   def __is_socket(cls, path):
-    mode = os.stat(path).st_mode
-    return stat.S_ISSOCK(mode)
+    return stat.S_ISSOCK(os.stat(path).st_mode) if os.path.exists(path) else False
 
   @classmethod
   def __root_mount(cls, source, name, destination=None):

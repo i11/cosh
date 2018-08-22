@@ -85,6 +85,7 @@ def get():
               cache=cache,
               repositories=repositories)
 
+  logging.debug('Running cosh: %s' % cosh)
   try:
     cosh.run(args.command, args.arguments)
   except BaseException as e:
