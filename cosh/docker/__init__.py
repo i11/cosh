@@ -80,9 +80,7 @@ class DockerEnvironment(Printable):
     dev = '/dev'
     ssh_auth_sock = os.environ.get('SSH_AUTH_SOCK')
 
-    mounts = [DockerMount(source='$(pwd)',
-                          target=('/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT
-                                  else '$(pwd)'))]
+    mounts = [DockerMount(source=pwd, target=self.workdir())]
     if not (pwd == self.tmpdir_base or '$(pwd)' == self.tmpdir_base):
       mounts += DockerEnvironment.__root_mount(self.tmpdir_base, 'tmp')
     if not (pwd == self.home or '$(pwd)' == self.home):
@@ -108,7 +106,8 @@ class DockerEnvironment(Printable):
     return mounts
 
   def workdir(self):
-    return '/mount/root' if os.getcwd() == DockerEnvironment.FS_ROOT else '$(pwd)'
+    pwd = os.getcwd()
+    return '/mount/root' if pwd == DockerEnvironment.FS_ROOT else pwd
 
   def environment(self):
     docker_host = os.getenv('DOCKER_HOST',
@@ -139,7 +138,7 @@ class DockerEnvironment(Printable):
             '%s%s' % (env_split[0], ('=%s' % os.path.expandvars(value) if value else ''))
           ]
       else:
-        merged_envs += [env]
+        merged_envs += [os.path.expandvars(env)]
 
     logging.debug('Merged envs: %s' % merged_envs)
     distinct_envs = list(set(merged_envs))
