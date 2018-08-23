@@ -135,7 +135,9 @@ class DockerEnvironment(Printable):
           value = (extra_env_split[1] if len(extra_env_split) > 1 else None) \
             if extra_env_split[0] == env_split[0] \
             else (env_split[1] if len(env_split) > 1 else None)
-          merged_envs += ['%s%s' % (env_split[0], ('=%s' % value if value else ''))]
+          merged_envs += [
+            '%s%s' % (env_split[0], ('=%s' % os.path.expandvars(value) if value else ''))
+          ]
       else:
         merged_envs += [env]
 

@@ -10,6 +10,10 @@ from cosh.docker.repositories import DockerRepositoryFactory
 from cosh.tmpdir import Tmpdir, rmdir
 
 
+def normalize_path(path):
+  return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
+
+
 def get():
   parser = argparse.ArgumentParser(description='Container shell', prog='cosh')
   parser.add_argument('--home', default=os.environ.get('HOME'), type=str,
@@ -57,9 +61,13 @@ def get():
     logging.basicConfig(level=logging.INFO)
 
   # TODO: Redesign
-  tmpdir = Tmpdir(basedir=args.tmpdir, cachedir=args.cache_dir)
+  tmpdir = Tmpdir(basedir=normalize_path(args.tmpdir),
+                  cachedir=normalize_path(args.cache_dir) if args.cache_dir else None)
 
-  volumes = {volume.split(':')[0]: volume.split(':')[1] for volume in args.volumes}
+  volumes = {
+    normalize_path(volume.split(':')[0]): normalize_path(volume.split(':')[1])
+    for volume in args.volumes
+  }
 
   if not args.repositories:
     args.repositories = ['actions/']
@@ -83,8 +91,8 @@ def get():
   cosh = Cosh(docker_client=docker_client,
               tmpdir=tmpdir.tmp(),
               command_base_dir=command_base_dir,
-              env=DockerEnvironment(tmpdir_base=args.tmpdir,
-                                    home=args.home,
+              env=DockerEnvironment(tmpdir_base=tmpdir.base(),
+                                    home=normalize_path(args.home),
                                     extra_volumes=volumes,
                                     extra_envs=args.envs),
               cache=cache,
