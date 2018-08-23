@@ -142,7 +142,9 @@ class DockerEnvironment(Printable):
         merged_envs += [env]
 
     logging.debug('Merged envs: %s' % merged_envs)
-    return list(set(merged_envs))
+    distinct_envs = list(set(merged_envs))
+    logging.debug('Distinct envs: %s' % distinct_envs)
+    return distinct_envs
 
   @classmethod
   def create(cls):

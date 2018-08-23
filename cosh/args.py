@@ -86,7 +86,7 @@ def get():
   if not os.path.exists(command_base_dir):
     os.makedirs(command_base_dir)
 
-  docker_client = DockerTerminalClient(args.docker_binary)
+  docker_client = DockerTerminalClient(normalize_path(args.docker_binary))
 
   cosh = Cosh(docker_client=docker_client,
               tmpdir=tmpdir.tmp(),
