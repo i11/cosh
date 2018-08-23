@@ -24,11 +24,11 @@ with open(version_py, 'w') as fh:
 
 version = '{ver}'.format(ver=version_git)
 
-with open('README.md') as f:
-  readme = f.read()
+with open('README.md') as fr:
+  readme = fr.read()
 
-with open('LICENSE') as f:
-  license = f.read()
+with open('LICENSE') as fl:
+  license = fl.read()
 
 url='https://github.com/i11/cosh',
 
@@ -37,6 +37,7 @@ setup(
   version=version,
   description='Container Shell',
   long_description=readme,
+  long_description_content_type="text/markdown",
   author='Ilja Bobkevic',
   author_email='ilja@bobkevic.com',
   url=url,
