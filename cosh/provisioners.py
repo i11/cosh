@@ -66,12 +66,14 @@ class CommandsProvisioner(Printable):
       logging.debug('Provisioning command: %s:%s' % (
         placed_record['record'].name, placed_record['record'].tags[0]))
       file = open(placed_record['path'], 'w')
+      # why test -t 0 instead test -t 1:
+      # Specifying -t is forbidden when the client is receiving its standard input from a pipe
       file.write(
           '#!/bin/bash -e\n'
           'cmd=$(basename ${BASH_SOURCE[0]})\n'
           'test -x /sbin.orig/$cmd && exec /sbin.orig/$cmd "$@"\n'
           'test -x /bin/$cmd && exec /bin/$cmd "$@"\n'
-          'test -t 1 && export USE_TTY="-t"\n'
+          'test -t 0 && export USE_TTY="-t"\n'
           'exec %s'
           % (self.docker_client.run_command(image='%s:%s' % (
             placed_record['record'].image_name, placed_record['record'].tags[0]),
