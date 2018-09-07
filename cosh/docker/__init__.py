@@ -46,7 +46,7 @@ class DockerTerminalClient(Printable):
 
 class DockerEnvironment(Printable):
   FS_ROOT = '/'
-  CONTAINER_HOME = '/home'
+  CONTAINER_HOME = '/container_user_home'
   DOCKER_SOCK = '/var/run/docker.sock'
 
   def __init__(self, tmpdir_base, home, extra_volumes, extra_envs):
@@ -87,7 +87,7 @@ class DockerEnvironment(Printable):
       mounts += DockerEnvironment.__root_mount(self.home, 'home')
 
     if not self.home == DockerEnvironment.CONTAINER_HOME:
-      mounts += DockerEnvironment.__root_mount(self.home, 'home', '/home')
+      mounts += DockerEnvironment.__root_mount(self.home, 'home', '/container_user_home')
 
     if DockerEnvironment.__is_socket(DockerEnvironment.DOCKER_SOCK):
       mounts += DockerEnvironment.__root_mount(DockerEnvironment.DOCKER_SOCK, 'docker.sock')
