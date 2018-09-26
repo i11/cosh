@@ -57,7 +57,7 @@ cosh gcloud auth configure-docker
 
 # Docker insists on matching executable in the PATH
 echo -e '#!/bin/bash -e'"\ncosh docker-credential-gcloud \"\$@\"" > /usr/local/bin/docker-credential-gcloud
-chmod +x /usr/loca/bin/docker-credential-gcloud
+chmod +x /usr/local/bin/docker-credential-gcloud
 
 # Get your image
 docker pull gcr.io/your-project/your-image-name:tag
