@@ -48,7 +48,7 @@ setup(
   ],
   install_requires=[
     'argparse==1.4.0',
-    'requests==2.19.1',
+    'requests==2.21.0',
     'google-auth==1.5.1',
     'natsort==5.3.3',
     'jsonpickle==0.9.6'
